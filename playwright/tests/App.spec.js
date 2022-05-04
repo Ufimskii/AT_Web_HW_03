@@ -1,22 +1,41 @@
-const { test, expect } = require("@playwright/test");
+const { expect, default: test } = require("@playwright/test");
+const { chromium } = require("playwright");
+const { email, password } = require("../user.js");
+const { wrongEmail, wrongPassword } = require("../user.js");
 
-test("test", async ({ page }) => {
-  // Go to https://netology.ru/free/management#/
-  await page.goto("https://netology.ru/free/management#/");
+test("Should log in with valid user", async () => {
+  const browser = await chromium.launch({
+    headless: false,
+    slowMo: 2000,
+  });
 
-  // Click a
-  await page.click("a");
-  await expect(page).toHaveURL("https://netology.ru/");
+  const page = await browser.newPage();
+  await page.goto("https://netology.ru/");
+  await page.goto("https://netology.ru/?modal=sign_in");
+  await page.locator('[placeholder="Email"]').fill(email);
+  await page.locator('[placeholder="Пароль"]').fill(password);
+  await page.locator('[data-testid="login-submit-btn"]').click();
+  const header = await page.locator('[text="Мои курсы и профессии"]');
+  await expect(header).toBeVisible;
 
-  // Click text=Учиться бесплатно
-  await page.click("text=Учиться бесплатно");
-  await expect(page).toHaveURL("https://netology.ru/free");
+  await page.close();
+  await browser.close();
+});
 
-  page.click("text=Бизнес и управление");
+test("Should not log in with invalid user", async () => {
+  const browser = await chromium.launch({
+    headless: false,
+    slowMo: 2000,
+  });
 
-  // Click text=Как перенести своё дело в онлайн
-  await page.click("text=Как перенести своё дело в онлайн");
-  await expect(page).toHaveURL(
-    "https://netology.ru/programs/kak-perenesti-svoyo-delo-v-onlajn-bp"
-  );
+  const page = await browser.newPage();
+  await page.goto("https://netology.ru/");
+  await page.goto("https://netology.ru/?modal=sign_in");
+  await page.locator('[placeholder="Email"]').fill(wrongEmail);
+  await page.locator('[placeholder="Пароль"]').fill(wrongPassword);
+  const error = await page.locator('[data-testid="login-error-hint"]');
+  await expect(error).toBeVisible;
+
+  await page.close();
+  await browser.close();
 });
